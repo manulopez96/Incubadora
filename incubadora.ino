@@ -12,7 +12,7 @@ LiquidCrystal_I2C lcd (0x27, 2, 1, 0, 4, 5, 6, 7);
 //salidas rele
 int ventilador1 = 5;
 int ventilador2 = 6;
-int luz = 7;
+int luz = 8;
 
 
 //Entradas digitales
@@ -37,7 +37,7 @@ int valor_temperatura;
 
 //control base
 Servo servo1;
-int PINSERVO = 12;
+int PINSERVO = 11;
 int PULSOMIN = 600;
 int PULSOMAX = 2550;
 
@@ -48,6 +48,8 @@ int sumador_horas = 0;
 
 
 void setup() {
+  servo1.write(44);
+  
   lcd.setBacklightPin(3,POSITIVE);
   lcd.setBacklight(HIGH);
   lcd.begin(16, 2);
@@ -61,6 +63,11 @@ void setup() {
   pinMode(ventilador2, OUTPUT);
   pinMode(luz, OUTPUT);
   pinMode(pulsador, INPUT);
+
+  // seteo de salidas a LOW
+  digitalWrite(ventilador1, 1);
+  digitalWrite(ventilador2, 1);
+  digitalWrite(luz, 1);
   
   Serial.begin(9600);
 }
@@ -68,22 +75,38 @@ void setup() {
 void loop() {
 
   unsigned long time_run = (millis()/3600000) + sumador_horas; //pasado a hora, tiempo de funcionamiento
+  int aux = 0;
   
-  // seteo de salidas a LOW
-  digitalWrite(ventilador1, 1);
-  digitalWrite(ventilador2, 1);
-  digitalWrite(luz, 1);
+  
 
-  while(digitalRead(pulsador)==1){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Sumar Horas");
-    sumador_horas += 1;
-    lcd.setCursor(0, 1);
-    lcd.print(  time_run + sumador_horas);    
-    delay(500);
+
+  // control temperatura y humedad
+  
+  if(dht_humedad <= set_humedad){
+    digitalWrite(ventilador1, 1);//apagado
+    digitalWrite(ventilador2, 1);//apagado
+    }  
+
+  if(dht_temperatura == set_temperatura){
+    digitalWrite(luz, 1);//apagada
+    digitalWrite(ventilador1, 1);//apagado
   }
 
+  if(dht_temperatura < set_temperatura / 1.05){
+    digitalWrite(luz, 0);//prendida
+    //digitalWrite(ventilador1, 0);//prendido
+  }
+
+  if(dht_temperatura > set_temperatura * 1.05){
+    digitalWrite(ventilador1, 0);//prendido
+  }
+
+  if(dht_humedad > set_humedad * 1.05){
+    digitalWrite(ventilador2, 0);//prendido
+  }
+
+
+  
   //seteo de humedad y temperatura
   valor_humedad = analogRead(pin_humedad);
   valor_temperatura = analogRead(pin_temperatura);
@@ -123,31 +146,49 @@ void loop() {
     lcd.print("  Oscilando  ");
 
     //moviendo base
-//    mover_base(); 
     mover_base(); 
+    digitalWrite(ventilador1, 0);//prendido
+    mover_base(); 
+    digitalWrite(ventilador1, 1);//apagado
     time_work = time_run + 4; // cada cuatro horas activa la oscilacion de la base 
     imprimir_en_serial();
     }
+
+  // sumador de horas 
+  while(digitalRead(pulsador)==1){
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Sumar Horas");
+    aux += 1;
+    lcd.setCursor(0, 1);
+    lcd.print(" ");
+    lcd.print(  time_run);    
+    lcd.print("h  >  ");
+    lcd.print(  time_run + aux);    
+    lcd.print("h  ");
+    delay(500);
+  }sumador_horas += aux;
+
 }
 
 
 void mover_base (){
 
-  for(int i = 44; i<88 ; i++){
+  for(int i = 44; i<68 ; i++){
     servo1.write(i);
-    delay(50);
+    delay(400);
   }
-    for(int i = 88; i>44 ; i--){
+    for(int i = 68; i>44 ; i--){
     servo1.write(i);
-    delay(50);
+    delay(400);
   }
   for(int i = 44; i>22 ; i--){
     servo1.write(i);
-    delay(50);
+    delay(400);
   }
-    for(int i = 22; i<44 ; i++){
+  for(int i = 22; i<44 ; i++){
     servo1.write(i);
-    delay(50);
+    delay(400);
   }
   servo1.write(44);
 }
