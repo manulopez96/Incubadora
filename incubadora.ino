@@ -48,7 +48,7 @@ int sumador_horas = 0;
 
 
 void setup() {
-  servo1.write(44);
+  servo1.write(25);
   
   lcd.setBacklightPin(3,POSITIVE);
   lcd.setBacklight(HIGH);
@@ -77,36 +77,7 @@ void loop() {
   unsigned long time_run = (millis()/3600000) + sumador_horas; //pasado a hora, tiempo de funcionamiento
   int aux = 0;
   
-  
-
-
-  // control temperatura y humedad
-  
-  if(dht_humedad <= set_humedad){
-    digitalWrite(ventilador1, 1);//apagado
-    digitalWrite(ventilador2, 1);//apagado
-    }  
-
-  if(dht_temperatura == set_temperatura){
-    digitalWrite(luz, 1);//apagada
-    digitalWrite(ventilador1, 1);//apagado
-  }
-
-  if(dht_temperatura < set_temperatura / 1.05){
-    digitalWrite(luz, 0);//prendida
-    //digitalWrite(ventilador1, 0);//prendido
-  }
-
-  if(dht_temperatura > set_temperatura * 1.05){
-    digitalWrite(ventilador1, 0);//prendido
-  }
-
-  if(dht_humedad > set_humedad * 1.05){
-    digitalWrite(ventilador2, 0);//prendido
-  }
-
-
-  
+ 
   //seteo de humedad y temperatura
   valor_humedad = analogRead(pin_humedad);
   valor_temperatura = analogRead(pin_temperatura);
@@ -117,6 +88,30 @@ void loop() {
   //medicion de humedad y temperatura
   dht_humedad = dht.readHumidity();
   dht_temperatura = dht.readTemperature();
+
+  // control temperatura y humedad
+  
+  if(dht_humedad <= set_humedad){
+    digitalWrite(ventilador1, 1);//apagado
+    digitalWrite(ventilador2, 1);//apagado
+  }  
+
+  if(dht_temperatura == set_temperatura*1.05){
+    digitalWrite(luz, 1);//apagada
+    digitalWrite(ventilador1, 1);//apagado
+  }
+
+  if(dht_temperatura < set_temperatura / 1.1){
+    digitalWrite(luz, 0);//prendida
+  }
+
+  if(dht_temperatura > set_temperatura * 1.1){
+    digitalWrite(ventilador1, 0);//prendido
+  }
+
+  if(dht_humedad > set_humedad){
+    digitalWrite(ventilador2, 0);//prendido
+  }
 
 
   // Imprimir estado de humedad y temperatura en LCD
@@ -147,14 +142,16 @@ void loop() {
 
     //moviendo base
     mover_base(); 
-    digitalWrite(ventilador1, 0);//prendido
     mover_base(); 
-    digitalWrite(ventilador1, 1);//apagado
     time_work = time_run + 4; // cada cuatro horas activa la oscilacion de la base 
     imprimir_en_serial();
+    digitalWrite(ventilador1, 0);//prender
+    delay(3000);
+    digitalWrite(ventilador1, 1);//apagar
     }
 
   // sumador de horas 
+  aux = 0;
   while(digitalRead(pulsador)==1){
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -174,23 +171,23 @@ void loop() {
 
 void mover_base (){
 
-  for(int i = 44; i<68 ; i++){
+  for(int i = 25; i<50 ; i++){
     servo1.write(i);
-    delay(400);
+    delay(100);
   }
-    for(int i = 68; i>44 ; i--){
+    for(int i = 50; i>25 ; i--){
     servo1.write(i);
-    delay(400);
+    delay(100);
   }
-  for(int i = 44; i>22 ; i--){
+  for(int i = 25; i>0 ; i--){
     servo1.write(i);
-    delay(400);
+    delay(100);
   }
-  for(int i = 22; i<44 ; i++){
+  for(int i = 0; i<25 ; i++){
     servo1.write(i);
-    delay(400);
+    delay(100);
   }
-  servo1.write(44);
+  servo1.write(25);
 }
 
   
