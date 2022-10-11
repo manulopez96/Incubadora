@@ -38,8 +38,8 @@ int valor_temperatura;
 //control base
 Servo servo1;
 int PINSERVO = 11;
-int PULSOMIN = 600;
-int PULSOMAX = 2550;
+int PULSOMIN = 900;
+int PULSOMAX = 2100;
 
 
 //control con tiempo
@@ -77,7 +77,7 @@ void loop() {
   unsigned long time_run = (millis()/3600000) + sumador_horas; //pasado a hora, tiempo de funcionamiento
   int aux = 0;
   
- 
+  
   //seteo de humedad y temperatura
   valor_humedad = analogRead(pin_humedad);
   valor_temperatura = analogRead(pin_temperatura);
@@ -89,6 +89,7 @@ void loop() {
   dht_humedad = dht.readHumidity();
   dht_temperatura = dht.readTemperature();
 
+  
   // control temperatura y humedad
   
   if(dht_humedad <= set_humedad){
@@ -96,12 +97,7 @@ void loop() {
     digitalWrite(ventilador2, 1);//apagado
   }  
 
-  if(dht_temperatura == set_temperatura*1.05){
-    digitalWrite(luz, 1);//apagada
-    digitalWrite(ventilador1, 1);//apagado
-  }
-
-  if(dht_temperatura < set_temperatura / 1.1){
+  if(dht_temperatura < set_temperatura){
     digitalWrite(luz, 0);//prendida
   }
 
@@ -109,11 +105,20 @@ void loop() {
     digitalWrite(ventilador1, 0);//prendido
   }
 
+    if(dht_temperatura > set_temperatura * 1.05){
+    digitalWrite(luz, 1);//apagada
+  }
+
   if(dht_humedad > set_humedad){
     digitalWrite(ventilador2, 0);//prendido
   }
 
 
+if((millis()%10000)<200){
+    lcd.begin(16, 2); 
+  }
+
+  
   // Imprimir estado de humedad y temperatura en LCD
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -140,32 +145,35 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print("  Oscilando  ");
 
+    //prende luz
+    digitalWrite(luz, 0);//prendida   
+
     //moviendo base
     mover_base(); 
     mover_base(); 
+    lcd.begin(16, 2);
     time_work = time_run + 4; // cada cuatro horas activa la oscilacion de la base 
     imprimir_en_serial();
-    digitalWrite(ventilador1, 0);//prender
-    delay(3000);
-    digitalWrite(ventilador1, 1);//apagar
     }
 
   // sumador de horas 
   aux = 0;
-  while(digitalRead(pulsador)==1){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Sumar Horas");
-    aux += 1;
-    lcd.setCursor(0, 1);
-    lcd.print(" ");
-    lcd.print(  time_run);    
-    lcd.print("h  >  ");
-    lcd.print(  time_run + aux);    
-    lcd.print("h  ");
-    delay(500);
-  }sumador_horas += aux;
-
+  if(digitalRead(pulsador)==1){ 
+    while(digitalRead(pulsador)==1){
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Sumar Horas");
+      aux += 1;
+      lcd.setCursor(0, 1);
+      lcd.print(" ");
+      lcd.print(  time_run);    
+      lcd.print("h  >  ");
+      lcd.print(  time_run + aux);    
+      lcd.print("h  ");
+      delay(500);
+    }sumador_horas += aux;
+  lcd.begin(16, 2);  
+  }
 }
 
 
