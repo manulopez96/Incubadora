@@ -30,14 +30,18 @@ const unsigned long intervaloOscilacion = 4UL * 3600000; // 4 horas en ms
 int sumador_horas = 0;
 
 // ================= Servo =================
-int pos_servo = 25;
-int direccion = 2;
+
+const int NIVEL_SERVO = 25;
+const int MIN_SERVO = 0;
+const int MAX_SERVO = 50;
+const int PULSO_MIN = 900;
+const int PULSO_MAX = 2100;
+const int TIEMPO_PASO = 100; // menor = más rápido
+int pos_servo = NIVEL_SERVO;
+int direccion = 5;
 int ciclos_osc = 0;
 bool oscilando = false;
 unsigned long ultimoMovimiento = 0;
-const int PULSO_MIN = 900;
-const int PULSO_MAX = 2100;
-const int TIEMPO_PASO = 1; // menor = más rápido
 
 // ================= Setup =================
 void setup() {
@@ -78,7 +82,7 @@ void setup() {
 // ================= Loop =================
 void loop() {
   
-  unsigned long horasFuncionando = (ahora / 3600000) + sumador_horas;
+  unsigned long horasFuncionando = (ahora / 3600000);
 
   leerSensores();
   controlAmbiente();
@@ -139,7 +143,9 @@ unsigned long tomarAhora(){
 
 void controlOscilacion() {
   ahora = tomarAhora();
-  if(!oscilando && ((ahora) - ultimaOscilacion >= intervaloOscilacion)) {
+
+  // Iniciar oscilación si corresponde
+  if (!oscilando && (ahora - ultimaOscilacion >= intervaloOscilacion)) {
     oscilando = true;
     ciclos_osc = 0;
     digitalWrite(PIN_LUZ, LOW); // prender luz mientras oscila
@@ -148,25 +154,40 @@ void controlOscilacion() {
     lcd.print("Oscilando...");
   }
 
-  if(oscilando) {
-    if(ahora - ultimoMovimiento >= TIEMPO_PASO) { // menor = más rápido
+  if (oscilando) {
+    if (ahora - ultimoMovimiento >= TIEMPO_PASO) {
       pos_servo += direccion;
-      if(pos_servo >= 50 || pos_servo <= 0) {
+
+      // Cambio de dirección al llegar a los límites
+      if (pos_servo >= MAX_SERVO || pos_servo <= MIN_SERVO) {
         direccion *= -1;
         ciclos_osc++;
       }
+
       servo1.write(pos_servo);
       ultimoMovimiento = tomarAhora();
 
-      if(ciclos_osc >= 4) { // ida y vuelta 2 veces
+      // Si completó los ciclos de oscilación
+      if (ciclos_osc >= 4) {
         oscilando = false;
         ultimaOscilacion = tomarAhora();
-        servo1.write(25);
-        imprimir_en_serial();
+        // dejamos que después se mueva suavemente al centro
+        direccion = (pos_servo > NIVEL_SERVO) ? -1 : 1;  // ajustar dirección hacia el centro
+      }
+    }
+  } 
+  else {
+    // Cuando terminó la oscilación, llevar al centro suavemente
+    if (abs(pos_servo - NIVEL_SERVO) > 0) {
+      if (ahora - ultimoMovimiento >= TIEMPO_PASO) {
+        pos_servo += (pos_servo > NIVEL_SERVO) ? -1 : 1;
+        servo1.write(pos_servo);
+        ultimoMovimiento = tomarAhora();
       }
     }
   }
 }
+
 
 void leerPulsador() {
   int aux = 0;
@@ -179,6 +200,11 @@ void leerPulsador() {
       delay(500);
     }
     sumador_horas += aux;
+    // Inicializar LCD
+    lcd.begin(16, 2);
+    lcd.setBacklightPin(3, POSITIVE);
+    lcd.setBacklight(HIGH);
+    lcd.clear();
   }
 }
 
